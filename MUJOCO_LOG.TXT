@@ -1,0 +1,84 @@
+Sat Jan 25 10:34:41 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Mon Jan 27 23:19:11 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Mon Jan 27 23:31:50 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Thu Jan 30 10:52:54 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Thu Jan 30 12:27:01 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:31:05 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:32:04 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:32:15 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:32:16 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:42:26 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Fri Jan 31 09:44:14 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:22:04 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:23:30 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:27:48 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:30:29 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:31:16 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:35:04 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:36:45 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:42:38 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:44:16 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:46:33 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:47:20 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:56:09 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:58:09 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Sun Feb  2 23:58:36 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Mon Feb  3 10:47:54 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Mon Feb  3 14:08:56 2025
+WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
+
+Tue Feb  4 16:50:29 2025
+ERROR: mjv_updateSceneState: m->nu changed
+
