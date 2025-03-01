@@ -112,18 +112,29 @@ if __name__ == '__main__':
     
     from sindy_rl.policy import RandomPolicy
     from sindy_rl import _parent_dir
+
+    import os
+
+    
+
     
     # TO-DO: replace with argparse
     filename = os.path.join(_parent_dir, 
                             'sindy_rl',
                             'config_templates', 
-                            'dyna_cart_linear.yml' # replace with appropriate config yaml
+                            'go_low.yml' # replace with appropriate config yaml
                             )
     
     # load config
     with open(filename, 'r') as f:
         dyna_config = yaml.load(f, Loader=yaml.SafeLoader)
-    LOCAL_DIR =  os.path.join(_parent_dir, 'ray_results',dyna_config['exp_dir'])
+        # 方式 1：直接硬编码路径
+    LOCAL_DIR = os.path.join('D:/ray_results', dyna_config['exp_dir'])  # Windows 路径
+    #LOCAL_DIR =  os.path.join(_parent_dir, 'ray_results',dyna_config['exp_dir'])
+
+    
+    os.environ["RAY_AIR_LOCAL_CACHE_DIR"] = LOCAL_DIR#来一这个
+    
     pprint(dyna_config)
     
     # Setup logger
@@ -148,7 +159,8 @@ if __name__ == '__main__':
     # ray + tune configs
     ray_config = dyna_config['ray_config']
     run_config=air.RunConfig(
-        local_dir=LOCAL_DIR,
+        #local_dir=LOCAL_DIR, 这里改了
+        storage_path=LOCAL_DIR,
         **ray_config['run_config']
     )
     

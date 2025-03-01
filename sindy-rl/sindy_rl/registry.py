@@ -4,6 +4,13 @@ import mujoco.viewer
 from gymnasium import Env, spaces
 from typing import Optional
 from ray.rllib.env.wrappers.dm_control_wrapper import DMCEnv
+#两种编码器
+from sindy_rl.VAE import get_latent_state
+from sindy_rl.VAE import Encoder
+from sindy_rl.VAE_new import create_dim_reducer, train_dim_reducer
+from sindy_rl.VAE_new import reduce_dimensionality
+
+from scipy.spatial.transform import Rotation as R
 
 class DMCEnvWrapper(DMCEnv):
     '''
@@ -15,11 +22,14 @@ class DMCEnvWrapper(DMCEnv):
         env_config = config or {}
         super().__init__(**env_config)
 
+import numpy as np
+import mujoco
+from gymnasium import Env, spaces
+import mujoco.viewer
+
 class Go2Sim(Env):
-    def __init__(
-        self, render_mode: Optional[str] = None, record_path=None, useFixedBase=False
-    ):  
-        # 加载MuJoCo模型
+    def __init__(self, render_mode: Optional[str] = None):
+        # 加载 MuJoCo 模型
         model_path = "D:\\EPS2_project\\move\\go2\\scene.xml"
         try:
             self.model = mujoco.MjModel.from_xml_path(model_path)
@@ -27,40 +37,47 @@ class Go2Sim(Env):
             raise RuntimeError(f"Failed to load MuJoCo model from {model_path}: {e}")
         
         self.data = mujoco.MjData(self.model)
-        '''
-        # 初始化MuJoCo的渲染器
-        self.viewer = None
-        if render_mode == "human":
-            self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
-        '''
-        # 设置仿真参数
-        self.model.opt.timestep = 1 / 240  # 与PyBullet时间步一致
-        self.target = None #target 先初始化为0
-        
-        # 获取关节和执行器信息
-        self.n_j = self.model.nu  # 执行器数量
-        self.n_q = self.model.nq  # 广义坐标数量
-        self.n_v = self.model.nv  # 广义速度数量
-        
-        # 打印自由度信息
-        print(f"n_q: {self.n_q}, n_v: {self.n_v}")
-        
-        # 设置观察空间和动作空间
-        # 观察空间：关节位置和速度
-        obs_low = -np.inf * np.ones(62)  # 维度改为 62
-        obs_high = np.inf * np.ones(62)  # 维度改为 
+        self.viewer = None  # 初始化渲染窗口
+        self.render_mode = render_mode  # 存储渲染模式
+
+        self.model.opt.timestep = 1 / 240  # 设置仿真时间步长
+        self.target = None  # 目标初始化
+
+        # 关节 & 速度信息
+        self.n_j = self.model.nu
+        self.n_q = self.model.nq
+        self.n_v = self.model.nv
+
+        print(f"n_q: {self.n_q}, n_v: {self.n_v}, n_j: {self.n_j}")
+
+        # 设置观察空间
+        obs_low = -np.inf * np.ones(13)
+        obs_high = np.inf * np.ones(13)
         self.observation_space = spaces.Box(obs_low, obs_high, dtype=np.float32)
-        
-        # 动作空间：执行器的控制范围
+
+        # 设置动作空间
         if self.model.actuator_ctrlrange is not None:
             act_low = self.model.actuator_ctrlrange[:, 0]
             act_high = self.model.actuator_ctrlrange[:, 1]
         else:
-            # 如果没有定义控制范围，假设为[-1, 1]
             act_low = -np.ones(self.n_j)
             act_high = np.ones(self.n_j)
         self.action_space = spaces.Box(act_low, act_high, dtype=np.float32)
 
+    def render(self, mode="human"):
+        if mode == "human":
+            if self.viewer is None:
+                self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
+            self.viewer.sync()
+        elif mode == "rgb_array":
+            width, height = 480, 480
+            img = np.zeros((height, width, 3), dtype=np.uint8)
+            mujoco.mjr_render(mujoco.MjrContext(self.model), img)
+            return img
+        else:
+            raise NotImplementedError("Unsupported render mode. Use 'human' or 'rgb_array'.")
+
+        
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         # 重置仿真数据
         mujoco.mj_resetData(self.model, self.data)
@@ -74,9 +91,6 @@ class Go2Sim(Env):
         
         # 获取初始观察值
         obs = self._get_obs()
-        print("Initial observation:", obs)
-        print("Observation space low:", self.observation_space.low)
-        print("Observation space high:", self.observation_space.high)
         return obs, {}
 
     def step(self, action):
@@ -90,14 +104,15 @@ class Go2Sim(Env):
         '''
         # 返回观察值、奖励、终止标志、截断标志和信息
         obs = self._get_obs()
-        print("Step observation:", obs)
-        reward = self._get_reward()
+        #print("Step observation:", obs)
+        reward = self._get_reward(obs)
         terminated = self._get_done()  # 任务是否因失败而终止
         truncated = False  # 任务是否因时间限制而终止
         info = self._get_info()
+        #self.step_counter += 1
         
         return obs, reward, terminated, truncated, info
-
+    '''
     def _get_obs(self):
         # 读取 MuJoCo 的状态
         q = self.data.qpos.copy().astype(np.float32)  # 关节角度 + 可能的基座状态
@@ -132,10 +147,49 @@ class Go2Sim(Env):
             foot_contact, external_forces, joint_torques,  # 触地信息 & 外部力 & 关节力矩
             goal_info  # 目标信息
         ])
-        print("base_orientation:",base_orientation)
 
+        #原本的有62维
+        return obs 
+    '''
+    def _get_obs(self):
+        q = self.data.qpos.copy().astype(np.float32)
+        dq = self.data.qvel.copy().astype(np.float32)
+
+        # --- 核心运动学特征（9维）---
+        # 基座姿态 (2维)
+        base_height = q[2:3]  # 机器人基座的高度 [1]
+        base_orientation = R.from_quat(q[3:7]).as_euler('xyz')[:1]  # 机器人基座的俯仰角 [1]
+        
+
+        # 基座运动 (3维)
+        base_lin_velocity = dq[:2]  # 机器人基座在 X/Y 方向的线速度 [2]
+        base_ang_velocity = dq[5:6]  # 机器人基座的俯仰角速度 [1]
+      
+
+        # --- 关节运动对称编码（8维）---
+        # 前腿运动模式 (4维)
+        front_angle_diff = q[7:9] - q[9:11]  # 前腿左右关节角度差 [2]
+        front_vel_mean = (dq[6:8] + dq[8:10]) / 2  # 前腿对称平均速度 [2]
+        
+
+        # 后腿运动模式 (4维)
+        rear_angle_diff = q[11:13] - q[13:15]  # 后腿左右关节角度差 [2]
+        rear_vel_mean = (dq[10:12] + dq[12:14]) / 2  # 后腿平均速度 [2]
+       
+
+        # --- 组合观测（总维度：2+3+4+4=13）---
+        obs = np.concatenate([
+            base_height,  # 机器人基座的高度 [1]
+            base_orientation,  # 机器人基座的俯仰角 [1]
+            base_lin_velocity,  # 机器人基座的 X/Y 方向线速度 [2]
+            base_ang_velocity,  # 机器人基座的俯仰角速度 [1]
+            front_angle_diff,  # 前腿左右关节角度差 [2]
+            front_vel_mean,  # 前腿对称平均速度 [2]
+            rear_angle_diff,  # 后腿左右关节角度差 [2]
+            rear_vel_mean,  # 后腿平均速度 [2]
+        ])
         return obs
-
+        
 
 
     def get_foot_contacts(self):
@@ -163,9 +217,56 @@ class Go2Sim(Env):
         base_force = self.data.cfrc_ext[0, :3]  # 机器人基座的外力（前三个分量）
         return base_force.astype(np.float32)
 
-    def _get_reward(self):
-        # 定义奖励函数（根据任务需求）
-        return 0.0
+    def _get_reward(self,obs):
+            # 定义奖励函数（根据任务需求）
+                # 奖励系数配置（可调整）
+        FORWARD_WEIGHT = 2.0      # 前进速度奖励
+        LATERAL_PENALTY = 0.5     # 横向移动惩罚
+        PITCH_PENALTY = 0.3       # 俯仰角惩罚
+        HEIGHT_PENALTY = 0.4      # 基座高度惩罚（新增）
+        ACT = 0.01  # 动作平滑性惩罚
+        SYMMETRY_PENALTY = 0.2    # 对称运动惩罚
+
+        # 观测值解析（严格对齐观测空间结构）
+        base_height = obs[0]                   # 基座高度 [1]
+        pitch = obs[1]                         # 俯仰角 [1]
+        lin_vel_x, lin_vel_y = obs[2], obs[3]   # 线速度XY [2]
+        front_angle_diff = obs[5:7]            # 前腿关节角度差 [2]
+        rear_angle_diff = obs[9:11]            # 后腿关节角度差 [2]
+
+        # 核心奖励项 --------------------------------------------------
+        # 1. 前进速度奖励（正向线性激励）
+        forward_reward = FORWARD_WEIGHT * lin_vel_x
+        
+        # 2. 横向稳定性惩罚（抑制侧滑）
+        lateral_penalty = LATERAL_PENALTY * (lin_vel_y ** 2)
+        
+        # 3. 姿态稳定性惩罚（保持水平姿态）
+        pitch_cost = PITCH_PENALTY * (pitch ** 2)
+        
+        # 4. 基座高度惩罚（新增，维持目标高度）
+        height_cost = HEIGHT_PENALTY * (base_height - 0.3) ** 2  # 假设目标高度0.3m
+        
+        # 5. 对称性惩罚（抑制肢体运动不对称）
+        symmetry_penalty = SYMMETRY_PENALTY * (
+            np.sum(front_angle_diff ** 2) + np.sum(rear_angle_diff ** 2)
+        )
+        
+        # 6. 动作平滑性惩罚（抑制突变控制）
+        #action_penalty = ACT * np.sum(np.square(action))
+
+        # 总奖励计算 --------------------------------------------------
+        total_reward = (
+            forward_reward
+            - lateral_penalty
+            - pitch_cost
+            - height_cost
+            - symmetry_penalty
+            #- action_penalty
+        )
+        
+        return total_reward
+        
 
     def _get_done(self):
         # 定义终止条件（根据任务需求）

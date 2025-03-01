@@ -3,7 +3,7 @@
 # --------------------------------------------------------
 
 exp_dir: go2-walk
-n_train_iter: 100000
+n_train_iter: 200 #这里挑了
 dyn_fit_freq: 10
 fcnet_hiddens: [256, 256]
 
@@ -11,7 +11,7 @@ real_env:
   class: Go2wrapper
   config: 
     render_mode: "human"
-    #useFixedBase: False
+    # useFixedBase: False
 
 
 drl:
@@ -20,7 +20,7 @@ drl:
     training: 
       lr_schedule: [[0, 1.0e-4], [20000000, 1.0e-8]]
       gamma: 0.99
-      lambda_: 0.95
+      lambda_: 0.75 #0.95
       vf_loss_coeff: 0.5
       clip_param: 0.2
       grad_clip: 0.5
@@ -37,7 +37,7 @@ drl:
           dyn: median
         init_weights: True
         act_dim: 12
-        obs_dim: 62
+        obs_dim: 13
         act_bounds: 
           - [-10, 10]
           - [-10, 10]
@@ -52,70 +52,26 @@ drl:
           - [-10, 10]
           - [-10, 10]
           
-        obs_bounds: 
-          - [-3.14, 3.14]  # base_position x
-          - [-3.14, 3.14]  # base_position y
-          - [-3.14, 3.14]  # base_position z
-          - [0, 1]  # base_orientation qx
-          - [0, 1]  # base_orientation qy
-          - [0, 1]  # base_orientation qz
-          - [0, 1]  # base_orientation qw
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]  # q_joints ()
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14]
-          - [-3.14, 3.14] 
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10]
-          - [-10, 10] # dq_joints ()
-          - [-5, 5]  # base_linear_velocity x
-          - [-5, 5]  # base_linear_velocity y
-          - [-5, 5]  # base_linear_velocity z
-          - [-5, 5]  # base_angular_velocity x
-          - [-5, 5]  # base_angular_velocity y
-          - [-5, 5]  # base_angular_velocity z
-          - [0, 1]
-          - [0, 1] 
-          - [0, 1] 
-          - [0, 1]   # foot_contact (0/1)
-          - [-50, 50]
-          - [-50, 50]
-          - [-50, 50]  # external_forces (x, y, z)
-          - [-100, 100]
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100]
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100]
-          - [-100, 100] 
-          - [-100, 100] 
-          - [-100, 100]    # joint_torques (12 )
-          #goal = none right now
+        obs_bounds:
+        
+  
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+          - [-100,100]
+        
+
 
           
     framework: torch
@@ -123,6 +79,7 @@ drl:
     evaluation: 
       evaluation_config:
         env_config: 
+          max_episode_steps: 1000
           init_real_on_start: True
           use_real_env: True
           use_bounds: False
@@ -140,23 +97,23 @@ drl:
 
 off_policy_buffer:
   config:
-    max_samples: 50000
+    max_samples: 50000 #50000
   init: 
     type: collect
     kwargs: 
-      n_steps: 20000
+      n_steps: 20000 #20000
 
 on_policy_buffer:
   config:
-    max_samples: 20000
+    max_samples: 20000 #20000
   collect:
-    n_steps: 1000
+    n_steps: 1000 #1000
 
 
 dynamics_model:
   class: EnsembleSINDyDynamicsModel
   config:
-    callbacks: project_go2
+    callbacks: project_low_space
     dt: 1
     discrete: True
     optimizer:
@@ -164,17 +121,17 @@ dynamics_model:
         name: STLSQ
         kwargs:
           alpha: 5.0e-5
-          threshold: 5.0e-4 #7.0e-3
+          threshold: 7.0e-3  #5.0e-4 #7.0e-3
       ensemble:
         bagging: True  
         library_ensemble: True  
-        n_models: 20  
+        n_models: 5 #20  
         
     feature_library:
       name: affine
       kwargs:
         poly_deg: 2 # means the deg in equation
-        n_state: 62  # real 62
+        n_state:  13 # real 62
         n_control: 12  # i dont sure
         poly_int: True
         tensor: True
@@ -182,7 +139,7 @@ dynamics_model:
 rew_model:
   class: FunctionalRewardModel
   config: 
-    name: go2_straight_walk_reward
+    name: go2_straight_walk_reward_low
 
 
 ray_config:
@@ -190,7 +147,7 @@ ray_config:
     name: "b1-walk_sindy_freq=10"
     stop:
       num_env_steps_sampled: 5.0e+7
-   
+    
   tune_config:
-    num_samples: 10
+    num_samples: 4 #10
   checkpoint_freq: 10 

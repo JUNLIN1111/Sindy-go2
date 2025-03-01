@@ -63,6 +63,67 @@ def go2_straight_walk_reward(obs, action):
     return reward
 #robot = Go1EnvWithBounds()
 
+def go2_straight_walk_reward_low(obs, action):
+    """Go2机器人直行任务的低层次奖励函数
+    设计目标：在保持稳定的前提下实现快速直行
+    
+    观测特征说明（13维）：
+    [0]基座高度  [1]基座俯仰角
+    [2]X线速度  [3]Y线速度  [4]俯仰角速度
+    [5-6]前腿角度差  [7-8]前腿速度均值
+    [9-10]后腿角度差  [11-12]后腿速度均值
+    
+    奖励组成：
+    1. 前进速度奖励：鼓励接近目标速度（0.8m/s）
+    2. 运动稳定性惩罚：高度、姿态、侧向运动
+    3. 关节对称性奖励：促进协调步态
+    4. 能量效率惩罚：抑制剧烈动作
+    5. 生存奖励：鼓励持续运动
+    """
+    
+    # 目标参数
+    TARGET_VELOCITY = 2    # 目标前进速度（m/s）
+    DESIRED_HEIGHT = 0.3      # 标称站立高度（m）
+    
+    # 观测分量解析
+    base_height = obs[0]
+    base_pitch = obs[1]
+    lin_vel_x = obs[2]
+    lin_vel_y = obs[3]
+    ang_vel_pitch = obs[4]
+    
+    # ---- 核心奖励项 ----
+    # 1. 速度跟踪奖励（高斯型，0.6-1.0m/s时奖励较高）
+    velocity_reward = np.exp(-2*(lin_vel_x - TARGET_VELOCITY)**2)
+    
+    # 2. 稳定性惩罚（二次型）
+    height_penalty = 0.5*(base_height - DESIRED_HEIGHT)**2
+    pitch_penalty = 0.8*base_pitch**2 + 0.1*ang_vel_pitch**2
+    lateral_penalty = 1.2*lin_vel_y**2
+    
+    # 3. 运动对称性奖励（前腿/后腿关节差异）
+    front_leg_sym = np.exp(-0.5*(obs[5]**2 + obs[6]**2))  # 前腿角度差异
+    rear_leg_sym = np.exp(-0.5*(obs[9]**2 + obs[10]**2))  # 后腿角度差异
+    
+    # 4. 能量效率惩罚（抑制剧烈动作）
+    action_penalty = 0.002*np.sum(action**2)
+    
+    # 5. 生存奖励（鼓励持续运动）
+    survival_bonus = 0.2
+    
+    # ---- 加权组合 ----
+    reward = (
+        2.0 * velocity_reward
+        - 1.5 * height_penalty
+        - 1.0 * pitch_penalty
+        - 0.8 * lateral_penalty
+        + 0.6 * (front_leg_sym + rear_leg_sym)
+        - action_penalty
+        + survival_bonus
+    )
+    
+    return reward  
+
 '''
 def _reward_lin_vel_z(robot):
     # Penalize z axis base linear velocity
@@ -159,4 +220,5 @@ def _reward_feet_contact_forces(robot):
     return torch.sum((torch.norm(robot.contact_forces[:, robot.feet_indices, :], dim=-1) -  robot.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
 
 def go_reward():
-    return _reward_lin_vel_z()+_reward_ang_vel_xy()'''
+    return _reward_lin_vel_z()+_reward_ang_vel_xy()
+'''

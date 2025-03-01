@@ -1,89 +1,92 @@
 import numpy as np
 import pysindy as ps
-
 def lin_and_cube_library(poly_int = False):
     '''
-    Restricted polynomial library to cubic and linear combinations.
-    
-    Parameters:
-        `poly_int` (bool): whether to into include polynomial (cubic)
-            interaction terms (e.g. x^2 y). If False, just include homogenous
-            terms (e.g. x^3, y^3)
+    将多项式库限制为线性项和三次项的组合。
+
+    参数：
+        `poly_int` (布尔值): 是否包含多项式（三次）交互项（例如 x^2 y）。
+            如果为 False，则仅包含齐次项（例如 x^3, y^3）。
     '''
     if poly_int:
+        # 如果包含交互项，定义库函数和名称
         library_functions = [
-            lambda x: x,
-            lambda x,y: x * y**2,
-            lambda x: x**3
+            lambda x: x,  # 线性项
+            lambda x,y: x * y**2,  # 交互项（如 x y^2）
+            lambda x: x**3  # 三次项
         ]
         library_names = [lambda x: x, 
                          lambda x,y: f'{x} {y}^2', 
                          lambda x: f'{x}^3'
                          ]
     else:
+        # 如果不包含交互项，仅定义线性项和三次项
         library_functions = [
-            lambda x: x,
-            lambda x: x**3
+            lambda x: x,  # 线性项
+            lambda x: x**3  # 三次项
         ]
         library_names = [lambda x: x, lambda x: f'{x}^3']
 
+    # 创建自定义库
     polyLibCustom = ps.CustomLibrary(library_functions=library_functions, 
                                     function_names = library_names)
 
     return polyLibCustom
 
+
 def get_affine_lib(poly_deg, n_state=2, n_control = 2, poly_int=False, tensor=False, use_cub_lin=False):
     '''
-    Create control-affine library of the form:
+    创建控制仿射库，形式为：
         x_dot = p_1(x) + p_2(x)u
-    Where p_1 and p_2 are polynomials of degree poly_deg in state-variables, x. 
-    
-    Paramters:
-        `poly_deg`  (int):  The degree of the polynomials p_1, p_2
-        `n_state`   (int):  The dimension of the state variable x
-        `n_control` (int):  The dimension of the control variable u
-        `poly_int`  (bool): Whether to include the polynomial interactions
-                    i.e., for poly_deg = 2, whether x_1 * x_2 terms will be used
-                    or just (x_j)^2
-        `tensor`    (bool): Whether or not to include p_2 (i.e the tensor product
-                    of the polynomial state-space library and the linear control
-                    library)
-    
+    其中 p_1 和 p_2 是关于状态变量 x 的多项式，阶数为 poly_deg。
+
+    参数：
+        `poly_deg`  (整数): 多项式 p_1 和 p_2 的阶数
+        `n_state`   (整数): 状态变量 x 的维度
+        `n_control` (整数): 控制变量 u 的维度
+        `poly_int`  (布尔值): 是否包含多项式交互项
+                    例如，当 poly_deg = 2 时，是否包含 x_1 * x_2 项，还是仅包含 (x_j)^2
+        `tensor`    (布尔值): 是否包含 p_2（即多项式状态空间库与线性控制库的张量积）
+        `use_cub_lin` (布尔值): 是否使用自定义的线性+三次项库
     '''
     if use_cub_lin:
-        assert poly_deg==3, 'poly_deg must be 3 to use custom Cubic + Linear library'
+        # 如果使用自定义的线性+三次项库，确保 poly_deg 为 3
+        assert poly_deg==3, 'poly_deg 必须为 3 才能使用自定义的线性+三次项库'
         polyLib = lin_and_cube_library(poly_int = poly_int) 
     else:
+        # 否则，使用标准的多项式库
         polyLib = ps.PolynomialLibrary(degree=poly_deg, 
                                         include_bias=False, 
                                         include_interaction=poly_int)
+    
+    # 创建线性控制库
     affineLib = ps.PolynomialLibrary(degree=1, 
                                     include_bias=False, 
                                     include_interaction=False)
 
-    # For the first library, don't use any of the control variables.
-    # forcing this to be zero just ensures that we're using the "zero-th"
-    # indexed variable. The source code uses a `np.unique()` call
+    # 对于第一个库（状态库），不使用任何控制变量。
+    # 通过将控制变量索引设置为 0，确保仅使用状态变量。
     inputs_state_library = np.arange(n_state + n_control)
     inputs_state_library[-n_control:] = 0
     
-    # For the second library, we only want the control variables.
-    #  forching the first `n_state` terms to be n_state + n_control - 1 is 
-    #  just ensuring that we're using the last indexed variable (i.e. the
-    #  last control term).
+    # 对于第二个库（控制库），仅使用控制变量。
+    # 通过将状态变量索引设置为 n_state + n_control - 1，确保仅使用控制变量。
     inputs_control_library = np.arange(n_state + n_control)
     inputs_control_library[:n_state] = n_state + n_control -1
     
+    # 将两个库的输入索引组合成一个数组
     inputs_per_library = np.array([
                                     inputs_state_library,
                                     inputs_control_library
                                     ], dtype=int)
 
+    # 如果 tensor 为 True，设置张量积数组
     if tensor:
         tensor_array = np.array([[1, 1]])
     else:
         tensor_array = None 
 
+    # 创建广义库，将状态库和控制库组合起来
     generalized_library = ps.GeneralizedLibrary(
         [polyLib, affineLib],
         tensor_array=tensor_array,

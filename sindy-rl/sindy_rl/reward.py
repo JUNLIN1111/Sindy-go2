@@ -33,7 +33,9 @@ class FunctionalRewardModel(BaseRewardModel):
         self.rew_kwargs = config.get('kwargs', {})
         self.can_update = False
 
+    
     def predict(self, x, u):
+
         return self.rew_fn(x, u, **self.rew_kwargs)
 
     def fit(self, X, U, Y):

@@ -82,3 +82,6 @@ WARNING: mju_openResource: unknown file '../unitree_robots/go2/scene.xml'
 Tue Feb  4 16:50:29 2025
 ERROR: mjv_updateSceneState: m->nu changed
 
+Thu Feb 27 16:35:43 2025
+ERROR: mjv_updateSceneState: m->nu changed
+
