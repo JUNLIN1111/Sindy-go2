@@ -1,0 +1,44 @@
+## 🚀 安装指南
+
+### 环境要求
+- Python 3.10.x
+- Conda (Miniconda/Anaconda)
+- Git
+
+### 逐步安装
+
+1. **创建Conda环境**
+```bash
+conda create -n sindy_go2 python=3.10.16
+conda activate sindy_go2
+```
+
+2. **克隆代码仓库**
+```bash
+git clone https://github.com/JUNLIN1111/Sindy-go2.git
+cd Sindy-go2/sindy-rl
+```
+
+3. **安装依赖项**
+```bash
+pip install -r requirements.txt
+pip install -e .  # 可编辑模式安装
+```
+
+### 验证安装
+```bash
+python -c "import sindy_rl; print(sindy_rl.__version__)"
+```
+
+## 💻 基础使用
+```python
+from sindy_rl import make_env
+
+env = make_env('HalfCheetah-v4')
+obs = env.reset()
+action = env.action_space.sample()
+obs, reward, done, info = env.step(action)
+```
+
+## 📚 文档
+API参考和教程请见 [docs/](docs/) 目录
