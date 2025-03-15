@@ -1,9 +1,30 @@
-# Sindy-go2 - Use Sindy-rl in go2 Robots
+# 🦿 SINDy-Go2: Sparse Dynamics-Based Control and Imitation Learning for Quadruped Robots
 
-[![Python 3.10](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+## 📝 Project Overview
+This project leverages **SINDy (Sparse Identification of Nonlinear Dynamics)** combined with **Imitation Learning** to achieve efficient walking and jumping control for quadruped robots (e.g., Unitree Go2 and Boston Dynamics Spot). By extracting sparse dynamical models from expert demonstrations, we reduce the computational complexity of policy learning while maintaining model interpretability, accelerating deployment from simulation (MuJoCo) to real-world hardware.
 
+---
 
-A PyTorch-based reinforcement learning framework for robotic control.
+## 🚀 Installation Guide
+
+### Requirements
+- **Python**: 3.10.x
+- **Package Manager**: Conda (Miniconda/Anaconda)
+- **Version Control**: Git
+
+### Step-by-Step Installation
+```bash
+# 1. Create and activate Conda environment
+conda create -n sindy_go2 python=3.10.16
+conda activate sindy_go2
+
+# 2. Clone repository
+git clone https://github.com/JUNLIN1111/Sindy-go2.git
+cd Sindy-go2/sindy-rl
+
+# 3. Install dependencies
+pip install -r requirements.txt
+pip install -e .  # Install in editable mode
 
 ## 🚀 Installation
 
@@ -32,23 +53,4 @@ pip install -r requirements.txt
 pip install -e .  # Install in editable mode
 ```
 
-### Verify Installation
-```bash
-python -c "import sindy_rl; print(sindy_rl.__version__)"
-```
-
-## 💻 Basic Usage
-```python
-from sindy_rl import make_env
-
-env = make_env('HalfCheetah-v4')
-obs = env.reset()
-action = env.action_space.sample()
-obs, reward, done, info = env.step(action)
-```
-
-## 📚 Documentation
-See [docs/](docs/) directory for API reference and tutorials.
-
----
 
